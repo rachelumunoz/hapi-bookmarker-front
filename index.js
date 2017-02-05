@@ -35,7 +35,13 @@ server.register([{
 }, {
   register: require('vision')
 }, {
+  register: require('hapi-auth-cookie')
+}, {
+  register: require('./plugins/auth')
+}, {
   register: require('./routes/bookmarks')
+}, {
+  register: require('./routes/auth')
 }], (err)=>{
     
     if (err){
@@ -78,7 +84,7 @@ server.register([{
         return reply.redirect('/bookmarks')
       }
     })
-    
+
 
     server.start(err=>{
       if(err){
