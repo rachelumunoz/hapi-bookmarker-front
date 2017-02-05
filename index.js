@@ -3,7 +3,6 @@
 const Hapi = require('Hapi')
 
 //create server and connetion
-
 const server = new Hapi.Server({
   app: {
     apiBaseUrl: 'http://localhost:3000'
@@ -14,19 +13,8 @@ server.connection({
   port: 4000
 })
 
-//creat route
-
-server.route({
-  method: 'GET',
-  path: '/',
-  handler: (request, reply)=>{
-    return reply('hello from hapi')
-  }
-})
-
-
 //register plugin
-server.register({
+server.register([{
   register: require('good'),
   options: {
     reporters: {
@@ -42,11 +30,62 @@ server.register({
       }, 'stdout']
     }
   }
-}, (err)=>{
-  server.start(err=>{
-    if(err){
-      throw err
+}, {
+  register: require('inert')
+}, {
+  register: require('vision')
+}, {
+  register: require('./routes/bookmarks')
+}], (err)=>{
+    
+    if (err){
+      throw err 
     }
+
+    // serves static assets
+    server.route({
+      method: 'GET',
+      path: '/{param*}',
+      handler: {
+        directory: {
+          path: './public',
+          redirectToSlash: true
+        }
+      }
+    })
+
+    // sets view engine
+    server.views({
+      engines: {
+        hbs: require('handlebars')
+      },
+      relativeTo: __dirname,
+      path: './templates',
+      helpersPath: './templates/helpers',
+      layoutPath: './templates/layouts',
+      layout: true, 
+      isCached: false, // should be true in production
+      context: (request)=>{
+        return { user: request.auth.credentials }
+      }
+    })
+
+    // redirect from root
+    server.route({
+      method: 'GET',
+      path: '/',
+      handler: function(request, reply){
+        return reply.redirect('/bookmarks')
+      }
+    })
+    
+
+    server.start(err=>{
+      if(err){
+        throw err
+      }
+
+
     console.log(`server is running at ${server.info.uri}`)
   })
 })
